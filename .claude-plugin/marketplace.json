@@ -1,0 +1,20 @@
+{
+  "name": "claude-lean-marketplace",
+  "description": "Marketplace for Claude Lean — accurate token measurement and cost optimization for Claude Code",
+  "owner": {
+    "name": "Taejun",
+    "email": "taejun55@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "claude-lean",
+      "description": "Accurate token measurement, cost analysis, auto-optimization, and benchmarking for Claude Code sessions",
+      "version": "1.0.0",
+      "source": "./",
+      "author": {
+        "name": "Taejun",
+        "email": "taejun55@gmail.com"
+      }
+    }
+  ]
+}

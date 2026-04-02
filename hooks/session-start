@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# SessionStart hook for claude-lean plugin
+# Automatically scans token consumption and injects analysis into context
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SCRIPTS="${PLUGIN_ROOT}/skills/claude-lean/scripts"
+
+# ---------------------------------------------------------------------------
+# Run full scan via Python — collect JSON results
+# ---------------------------------------------------------------------------
+scan_result=$(python3 "${SCRIPTS}/count_tokens.py" scan --format json 2>/dev/null || echo "[]")
+
+# Parse scan results into a compact summary
+analysis=$(python3 - "$scan_result" <<'PYEOF'
+import json, sys
+
+try:
+    results = json.loads(sys.argv[1])
+except:
+    results = []
+
+if not results:
+    print("Claude Lean: No config files detected. Commands: /diagnose, /optimize, /benchmark")
+    sys.exit(0)
+
+lines = []
+warnings = []
+total_tokens = 0
+sys_prompt = 20000
+
+for r in results:
+    tokens = r.get("tokens", 0)
+    total_tokens += tokens
+    label = r.get("label", "?")
+    cat = r.get("category", "")
+
+    if cat in ("global_claude_md", "project_claude_md"):
+        if tokens > 2000:
+            warnings.append(f"CLAUDE.md is {tokens:,} tokens (RED) — auto-optimization recommended")
+        elif tokens > 750:
+            warnings.append(f"CLAUDE.md is {tokens:,} tokens (YELLOW) — consider optimizing")
+
+    if cat == "mcp_servers":
+        count = r.get("server_count", 0)
+        if count > 3:
+            warnings.append(f"{count} MCP servers active (~{tokens:,} tokens overhead)")
+
+    if cat == "memory" and tokens > 1000:
+        warnings.append(f"MEMORY.md is {tokens:,} tokens — consider trimming")
+
+grand_total = total_tokens + sys_prompt
+
+# Build compact summary
+parts = [f"Claude Lean scan: {grand_total:,} tokens/turn"]
+if warnings:
+    parts.append("Issues: " + "; ".join(warnings))
+    # Check if auto-optimization is warranted
+    has_red = any("RED" in w for w in warnings)
+    if has_red:
+        parts.append("ACTION REQUIRED: CLAUDE.md is in RED zone. Proactively run the optimizer and present results to the user.")
+else:
+    parts.append("All clear — config is lean.")
+
+parts.append("Commands: /diagnose, /optimize, /benchmark")
+print(" | ".join(parts))
+PYEOF
+)
+
+# ---------------------------------------------------------------------------
+# Escape and output as JSON for context injection
+# ---------------------------------------------------------------------------
+escape_for_json() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
+escaped=$(escape_for_json "$analysis")
+
+if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
+    printf '{\n  "additional_context": "%s"\n}\n' "$escaped"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -z "${COPILOT_CLI:-}" ]; then
+    printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$escaped"
+else
+    printf '{\n  "additionalContext": "%s"\n}\n' "$escaped"
+fi
+
+exit 0

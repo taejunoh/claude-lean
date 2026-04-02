@@ -1,0 +1,6 @@
+{
+  "name": "claude-lean",
+  "description": "Accurate token measurement, cost analysis, auto-optimization, and benchmarking",
+  "version": "1.0.0",
+  "contextFileName": "CLAUDE.md"
+}

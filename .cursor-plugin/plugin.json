@@ -1,0 +1,24 @@
+{
+  "name": "claude-lean",
+  "displayName": "Claude Lean",
+  "description": "Accurate token measurement, cost analysis, auto-optimization, and benchmarking for Claude Code sessions",
+  "version": "1.0.0",
+  "author": {
+    "name": "Taejun",
+    "email": "taejun55@gmail.com"
+  },
+  "homepage": "https://github.com/taejunoh/claude-lean",
+  "repository": "https://github.com/taejunoh/claude-lean",
+  "license": "MIT",
+  "keywords": [
+    "token",
+    "cost",
+    "optimization",
+    "lean",
+    "benchmark",
+    "tiktoken"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/",
+  "hooks": "./hooks/hooks-cursor.json"
+}
