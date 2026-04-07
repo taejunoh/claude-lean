@@ -14,25 +14,59 @@ When you start a session, it checks your setup and warns you if something looks 
 
 **Note:** Installation differs by platform. Claude Code and Cursor have built-in plugin systems. Codex and OpenCode require manual setup.
 
-### Claude Code (Official Marketplace)
+### Claude Code (Manual Setup)
+
+1. Clone the repo:
 
 ```bash
-/plugin install claude-lean@claude-plugins-official
+git clone https://github.com/taejunoh/claude-lean.git ~/.claude/plugins/claude-lean
 ```
 
-### Claude Code (via Plugin Marketplace)
-
-Register the marketplace first:
+2. Copy slash commands:
 
 ```bash
-/plugin marketplace add taejunoh/claude-lean
+cp ~/.claude/plugins/claude-lean/commands/*.md ~/.claude/commands/
 ```
 
-Then install:
+3. Add the SessionStart hook to `~/.claude/settings.json`. Merge this into your existing settings (keep your current keys, add the `hooks` section):
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_PLUGIN_ROOT=~/.claude/plugins/claude-lean ~/.claude/plugins/claude-lean/hooks/session-start"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+4. Append the plugin's CLAUDE.md content to your global config:
 
 ```bash
-/plugin install claude-lean@claude-lean-marketplace
+cat ~/.claude/plugins/claude-lean/CLAUDE.md >> ~/.claude/CLAUDE.md
 ```
+
+5. Install tiktoken:
+
+```bash
+pip install tiktoken
+```
+
+### Claude Code (Marketplace) — Coming Soon
+
+> **Coming Soon** — claude-lean will be available on the official marketplace. For now, use the manual setup above.
+>
+> ```bash
+> /plugin install claude-lean@claude-plugins-official
+> ```
 
 ### Cursor
 
@@ -134,6 +168,15 @@ python -m pytest tests/test_all.py -v
 28 test cases covering token counting, cost analysis, optimizer logic, and benchmark runner.
 
 ## Updating
+
+Manual update:
+
+```bash
+cd ~/.claude/plugins/claude-lean && git pull
+cp commands/*.md ~/.claude/commands/
+```
+
+Once the marketplace is available:
 
 ```bash
 /plugin update claude-lean
